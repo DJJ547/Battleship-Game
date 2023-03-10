@@ -1,25 +1,41 @@
 package Model;
 
+import java.util.Arrays;
+
 /** Represents a ship.
  * @author JiaJun Dai
 */
 public class ShipModel {
-	private int xPos[];
-	private int yPos[];
+	int[][] shipPos;
 	private int length;
+	private int shipHealth;
 	private boolean vertical;
-	//private boolean isHit[];
+	private boolean[] isDamaged;
 	
-	/**
-	 * Constructor for class ShipModel, use for AIPlayerModel.setShip()
-	 * @param length length of the ship
-	 */
-	public ShipModel(int length) {
-		this.length = length;
-		xPos = new int[length];
-		yPos = new int[length];
-		//isHit = new boolean[length];
-	}
+//	/**
+//	 * Constructor for class ShipModel, use for AIPlayerModel.setShip()
+//	 * @param length length of the ship
+//	 */
+//	public ShipModel(int length) {
+//		this.length = length;
+//		shipHealth = length;
+//		shipPos = new int[length][2];
+//		isDamaged = new boolean[length];
+//		for(int i = 0; i < isDamaged.length; i++) {
+//			isDamaged[i] = false;
+//		}
+//	}
+	
+//	/**
+//	 * Constructor for class ShipModel, use for AIPlayerModel.setShip()
+//	 * @param length length of the ship
+//	 */
+//	public ShipModel(int length) {
+//		this.length = length;
+//		shipPos = new int[length][2];
+//		shipHealth = length;
+//		isDamaged = new boolean[length];
+//	}
 	
 	/**
 	 * Constructor for class ShipModel, use for PlayerModel.setShip()
@@ -28,104 +44,67 @@ public class ShipModel {
 	 * @param length
 	 * @param vertical
 	 */
-	public ShipModel(int x, int y, int length, boolean vertical) {
+	public ShipModel(int[] shipStartPos, int length, boolean vertical) {
 		this.length = length;
-		xPos = new int[length];
-		yPos = new int[length];
-		//isHit = new boolean[length];
 		this.vertical = vertical;
-		
-		for (int i = 0; i < length; i++) {
-			xPos[i] = x;
-			yPos[i] = y;
-			//isHit[i] = false;
+		shipHealth = length;
+		shipPos = new int[length][2];
+		for(int i = 0; i < length; i++) {
+			shipPos[i] = shipStartPos.clone();
 			if(vertical) {
-				y++;
+				shipStartPos[1]++;
 			}else {
-				x++;
+				shipStartPos[0]++;
 			}
 		}
-		vertical = true;
-	}
-	
-	/*
-	public void registerHit(int x, int y) {
-		for(int i = 0; i < length; i++) {
-			if(xPos[i] == x && yPos[i] == y && isHit[i] == false) {
-				numHit++;
-				isHit[i] = true;
-			}
+		isDamaged = new boolean[length];
+		for(int i = 0; i < isDamaged.length; i++) {
+			isDamaged[i] = false;
 		}
 	}
 	
-	public boolean checkIfSunk() {
-		if(numHit == length) {
-			return true;
-		}else {
-			return false;
-		}
-	}
-	*/
-	
-	/**
-	 * get the grid display number for each ship with different length
-	 * @return int the numbers representing each ship, whether it's length 2,3,4,5
-	 */
-	public int getGridDisplay() {
-		if(length == 2) {
-			return 2;
-		}else if(length == 3) {
-			return 3;
-		}else if(length == 4) {
-			return 4;
-		}else if(length == 5) {
-			return 5;
-		}else
-			return 0; //should never get here
-	}
-	
-	/*
-	//To separate our two length-3 ships
-	public boolean contains(int x, int y) {
-		for(int i = 0; i < length; i++) {
-			if(xPos[i] == x && yPos[i] == y) {
+	public boolean registerHit(int[] hitPos) {
+		for (int i = 0; i < shipPos.length; i++) {
+			if (shipPos[i][0] == hitPos[0] && shipPos[i][1] == hitPos[1]) {
+				isDamaged[i] = true;
+				shipHealth--;
 				return true;
 			}
 		}
 		return false;
 	}
-	*/
+	
+	public boolean checkIfSunk() {
+		if (shipHealth == 0) {
+			return true;
+		}else
+			return false;
+	}
+	
+	/**
+	 * get the grid display number for each ship with different length
+	 * @return int the numbers representing each ship, whether it's length 2,3,4,5
+	 */
+	public char getTestGridDisplay() {
+		if(length == 2) {
+			return 'S';
+		}else if(length == 3) {
+			return 'D';
+		}else if(length == 4) {
+			return 'C';
+		}else if(length == 5) {
+			return 'A';
+		}else {
+			return (char)length;
+		}
+	}
 	
 	/**
 	 * get all x positions of the ship
 	 * @return xPos an array contains all ship's x position
 	 */
-	public int[] getXPos() {
-		return xPos;
-	}
-	
-	/**
-	 * set all x position of the ship
-	 * @param xPos
-	 */
-	public void setXPos(int[] xPos) {
-		this.xPos = xPos;
-	}
-
-	/**
-	 * get all y positions of the ship
-	 * @return yPos an array contains all ship's y position
-	 */
-	public int[] getYPos() {
-		return yPos;
-	}
-	
-	/**
-	 * set all y position of the ship
-	 * @param yPos
-	 */
-	public void setYPos(int[] yPos) {
-		this.yPos = yPos;
+	public int[][] getShipPos() {
+		return shipPos;
 	}
 	
 	/**
@@ -138,18 +117,20 @@ public class ShipModel {
 	}
 	
 	/**
-	 * set the ship placement to be vertical or horizontal
-	 * @param vertical 
-	 */
-	public void setVertical(boolean vertical) {
-		this.vertical = vertical;
-	}
-	
-	/**
 	 * get the ship length
 	 * @return length ship length
 	 */
 	public int getLength() {
 		return length;
 	}
+	
+//	public static void main(String[] args) {
+//		int[] shipPos = {1, 1};
+//		ShipModel sm = new ShipModel(shipPos, 2, true);
+//		for(int i = 0; i < sm.shipPos.length; i++) {
+//			for(int j = 0; j < sm.shipPos[i].length; j++) {
+//				System.out.println(sm.shipPos[i][j]);
+//			}
+//		}
+//	}
 }

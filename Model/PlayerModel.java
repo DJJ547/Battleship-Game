@@ -1,5 +1,6 @@
 package Model;
 import java.util.Random;
+import java.util.ArrayList;
 
 /** Represents a player.
  * @author JiaJun Dai
@@ -7,34 +8,64 @@ import java.util.Random;
 */
 public class PlayerModel {
 	private final int MAP_SIZE = 10;
-	private int map[][];
-	private boolean checkSetShip[][]; //This is a boolean map only use in setShip method
-	int numOfShots;
-	int numOfHits;
-	int numOfSunk;
-	public int numOfShips;
-	public int xPos;
-	public int yPos;
+	private char[][] testGrid;
+	private boolean[][] isFiredMap;
+	private ArrayList<ShipModel> shipList;
+	int numOfShipRemain;
+	int numOfFiring;
+	int numOfShipPlaced;
+	int numOfShipDamaged;
+	int numOfShipDestroyed;
 	Random rand = new Random();
-	ShipModel s1;
-	ShipModel s2;
-	ShipModel s3;
-	ShipModel s4;
-	ShipModel s5;
 	
 	/**
 	 * Constructor for class PlayerModel
 	 */
 	public PlayerModel() {
-		numOfShots = 0;
-		numOfHits = 0;
-		numOfShips = 0;
-		map = new int [MAP_SIZE][MAP_SIZE];
-		checkSetShip = new boolean[MAP_SIZE][MAP_SIZE];
+		shipList = new ArrayList<ShipModel>();
+		numOfShipRemain = 0;
+		numOfFiring = 0;
+		numOfShipPlaced = 0;
+		numOfShipDamaged = 0;
+		numOfShipDestroyed = 0;
+		resetTestGrid();
+	}
+	
+	private void setShipInTestGrid(int[][] shipPos, char shipLabel) {
+		for(int i = 0; i < shipPos.length; i++) {
+			testGrid[shipPos[i][1]][shipPos[i][0]] = shipLabel;
+		}
+	}
+	
+	private void removeSingleShipFromTestGrid(int[][] shipPos) {
+		for(int i = 0; i < shipPos.length; i++) {
+			testGrid[shipPos[i][1]][shipPos[i][0]] = '.';
+			numOfFiring++;
+		}
+	}
+	
+	private void registerMissedFiringOnTestGrid(int[] firingPos) {
+		if(testGrid[firingPos[1]][firingPos[0]] == '.') {
+			testGrid[firingPos[1]][firingPos[0]] = 'X';
+			numOfFiring++;
+		}
+	}
+	
+	private void registerHitFiringOnTestGrid(int[] firingPos) {
+		if(testGrid[firingPos[1]][firingPos[0]] == 2 || testGrid[firingPos[1]][firingPos[0]] == 3 || 
+				testGrid[firingPos[1]][firingPos[0]] == 4 || testGrid[firingPos[1]][firingPos[0]] == 5) {
+			testGrid[firingPos[1]][firingPos[0]] = Character.toLowerCase(testGrid[firingPos[1]][firingPos[0]]);
+			numOfFiring++;
+		}
+	}
+	
+	private void resetTestGrid() {
+		testGrid = new char [MAP_SIZE][MAP_SIZE];
+		isFiredMap = new boolean [MAP_SIZE][MAP_SIZE];
 		for (int x = 0; x < MAP_SIZE; x++) {
 			for (int y = 0; y < MAP_SIZE; y++) {
-				 map[x][y] = 0;
-				 checkSetShip[x][y] = false;
+				testGrid[x][y] = '.';
+				isFiredMap[x][y] = false;
 			}
 		}
 	}
@@ -44,10 +75,9 @@ public class PlayerModel {
 	* @param 
 	* @return 
 	*/
-	public void display() {
-		int colNum = 0;
+	public void displayTestGrid() {
 		System.out.print("play ");
-		for(;colNum < MAP_SIZE; colNum++) {
+		for(int colNum = 0; colNum < MAP_SIZE; colNum++) {
 			System.out.print(colNum + "   ");
 		}
 		System.out.println();
@@ -55,36 +85,29 @@ public class PlayerModel {
 		for(int x = 0; x < MAP_SIZE; x++) {
 			System.out.print(x + "    ");
 			for(int y = 0; y < MAP_SIZE; y++) {
-				if(map[x][y] == 0) {
-					System.out.print(".   "); //empty space
-				}else if(map[x][y] == -1) {
-					System.out.print("X   "); //missed shot
-				}else if(map[x][y] == 2) {
-					System.out.print("S   "); //length-2 ship part that has not been hit
-				}else if(map[x][y] == 3) {
-					System.out.print("D   "); //length-3 ship part that has not been hit
-				}else if(map[x][y] == 4) {
-					System.out.print("C   "); //length-4 ship part that has not been hit
-				}else if(map[x][y] == 5) {
-					System.out.print("A   "); //length-5 ship part that has not been hit
-				}else if(map[x][y] == -2) {
-					System.out.print("s   "); //length-2 ship part that's been hit
-				}else if(map[x][y] == -3) {
-					System.out.print("d   "); //length-3 ship part that's been hit
-				}else if(map[x][y] == -4) {
-					System.out.print("c   "); //length-4 ship part that's been hit
-				}else if(map[x][y] == -5) {
-					System.out.print("a   "); //length-5 ship part that's been hit
-				}
-
+				System.out.print(testGrid[x][y] + "   ");
 			}
 			System.out.println();
 			System.out.println();
 		}
-		System.out.println("numOfShots: " + numOfShots + ", " + "numOfHits: " + numOfHits);
+		System.out.println("numOfFiring: " + numOfFiring + ", " + "numOfshipRemain: " + numOfShipRemain);
 		System.out.println();
 		System.out.println();
 		System.out.println();
+	}
+	
+	/**
+	* Resets player grid and all variables
+	* @param 
+	* @return
+	*/
+	public void resetAll() {
+		numOfShipRemain = 0;
+		numOfFiring = 0;
+		numOfShipPlaced = 0;
+		numOfShipDamaged = 0;
+		numOfShipDestroyed = 0;
+		resetTestGrid();
 	}
 	
 	/**
@@ -93,39 +116,55 @@ public class PlayerModel {
 	* @return true if ship does not overlap with another ship on grid
 	* @return false if ship overlaps with another ship on grid
 	*/
-	public boolean setShip (ShipModel s) {
-		int[] xPos = s.getXPos();
-		int[] yPos = s.getYPos();
-		
-		if(setShipHelper(xPos, yPos, s.getLength())) {
-			//if ship part is not overlapping, we then set this ship
-			for(int i = 0; i < s.getLength(); i++) {
-				map[yPos[i]][xPos[i]] = s.getGridDisplay();
-				checkSetShip[yPos[i]][xPos[i]] = true;
-			}
-			numOfShips++;
+	public boolean placeSingleShip (ShipModel s) {
+		int[][] shipPos = s.getShipPos();
+		if(checkIfShipOutOfBound(shipPos) && checkIfShipOverlap(shipPos)) {
+			shipList.add(s);
+			setShipInTestGrid(shipPos, s.getTestGridDisplay());
+			numOfShipPlaced++;
 			return true;
-		}else {
-			return false;
 		}
+		return false;
 	}
 	
 	/**
-	* check the player ship part position one by one to see
-	* if it overlaps with another ship, and also check if
-	* the xPos[i] and yPos[i] is out of bound
-	* @param xPos[] an array storing all x coordinates of the ship
-	* @param yPos[] an array storing all y coordinates of the ship
-	* @param length length of the ship
-	* @return true - if overlaps or out of bound return true
-	* @return false - if no overlap or no out of bound return false
+	 * Remove one ship from the player grid
+	 * @param x x position of the ship
+	 * @param y y position of the ship 
+	 * @param length length of the ship
+	 * @param vertical ship placement is vertical or horizontal
+	 * @return
+	 */
+	public void removeSingleShip(ShipModel s) {
+		int[][] shipPos = s.getShipPos();
+		shipList.remove(s);
+		numOfShipPlaced--;
+		removeSingleShipFromTestGrid(shipPos);
+	}
+	
+	/**
+	* This will check if the ship position is out of bound
 	*/
-	private boolean setShipHelper (int xPos[], int yPos[], int length) {
-		//first check the ship part position one by one to see
-		//if it overlaps with another ship, if yes return false
-		for(int i = 0; i < length; i++) {
-			if(checkSetShip[yPos[i]][xPos[i]]) {
+	private boolean checkIfShipOutOfBound (int[][] shipPos) {
+		for(int i = 0; i < shipPos.length; i++) {
+			if(shipPos[i][0] < 0 || shipPos[i][1] < 0 || shipPos[i][0] >= MAP_SIZE || shipPos[i][1] >= MAP_SIZE) {
 				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	* This will check if the ship position overlaps with another ship
+	*/
+	private boolean checkIfShipOverlap (int[][] shipPos) {
+		for(int i = 0; i < shipPos.length; i++) {
+			for(int j = 0; j < shipList.size(); j++) {
+				for(int k = 0; k < shipList.get(j).getShipPos().length; k++) {
+					if(shipPos[i][0] == shipList.get(j).getShipPos()[k][0] && shipPos[i][1] == shipList.get(j).getShipPos()[k][1]) {
+						return false;
+					}
+				}
 			}
 		}
 		return true;
@@ -139,166 +178,108 @@ public class PlayerModel {
 	* @return false - numOfHits is not equal(below) to 17
 	*/
 	public boolean isGameOver() {
-		if(numOfHits == 17) {
-			System.out.println("Unfortunately, AI wins.....");
+		if(numOfShipDestroyed == numOfShipPlaced) {
+			return true;
 		}
-		return numOfHits == 17;
+		return false;
 	}
 	
-	/**
-	* AI fire shot to player grid.
-	* @param
-	* @return true - if AI hit a player ship part or if AI misses
-	* @return false - if AI fires at a player ship part that's been hit or a hit spot (duplicated firing)
-	*/
-	public boolean attackedByAI() {
+	public int[] getPlayerFiringPos(int[] firingPos) {
+		return firingPos;
+	}
+	
+	public boolean registerAIFiringPos(int[] firingPos) {
+		if(! isFiredMap[firingPos[1]][firingPos[0]]) {
+			for(int i = 0; i < shipList.size(); i++) {
+				if(shipList.get(i).registerHit(firingPos)) {
+					registerHitFiringOnTestGrid(firingPos);
+					isFiredMap[firingPos[1]][firingPos[0]] = true;
+					if(shipList.get(i).checkIfSunk()) {
+						shipList.remove(i);
+						numOfShipRemain--;
+						numOfShipDestroyed++;
+					}else {
+						numOfShipDamaged++;
+					}
+					return true;
+				}
+			}
+			registerMissedFiringOnTestGrid(firingPos);
+			return true;
+		}
+		return false;
+	}
+	
+	//======================================AI firing Logic===============================================================
+	public int[] getIsAllFiredRows() {
+		ArrayList<Integer> allFiredRows = new ArrayList<Integer>();
+		for(int i = 0; i < isFiredMap.length; i++) {
+			boolean isRowAllFired = true;
+			for(int j = 0; j <  isFiredMap[i].length; j++) {
+				if(! isFiredMap[i][j]) {
+					isRowAllFired = false;
+					break;
+				}
+			}
+			if(isRowAllFired) {
+				allFiredRows.add(i);
+			}
+		}
+		Object[] isAllFiredRowsObjArray = allFiredRows.toArray();
+		int len = isAllFiredRowsObjArray.length;
+		int[] isAllFiredIntArray = new int[len];
+		for(int i = 0; i < len; i++) {
+			isAllFiredIntArray[i] = (int)isAllFiredRowsObjArray[i];
+		}
+		return isAllFiredIntArray;
+	}
+
+	public int[] getIsFiredColNum(int row) {
+		ArrayList<Integer> allFiredColNum = new ArrayList<Integer>();
+		for(int i = 0; i < isFiredMap[row].length; i++) {
+			if(isFiredMap[row][i]) {
+				allFiredColNum.add(i);
+			}
+		}
 		
-		//This part is for the AI consecutive firing behavior
+		Object[] isFiredColNumObjArray = allFiredColNum.toArray();
+		int len = isFiredColNumObjArray.length;
+		int[] isFiredColNumIntArray = new int[len];
+		for(int i = 0; i < len; i++) {
+			isFiredColNumIntArray[i] = (int)isFiredColNumObjArray[i];
+		}
+		return isFiredColNumIntArray;
+	}
+	
+	public boolean[][] getIsFiredMap(){
+		return isFiredMap;
+	}
+	
+	//====================================================================================
+
+	public static void main(String[] args) {
+		int[] shipPos1 = {1, 1};
+		ShipModel sm1 = new ShipModel(shipPos1, 2, true);
+		int[] shipPos2 = {1, 1};
+		ShipModel sm2 = new ShipModel(shipPos2, 3, false);
+		int[] shipPos3 = {1, 0};
+		ShipModel sm3 = new ShipModel(shipPos3, 3, false);
+		PlayerModel p1 = new PlayerModel();
+		System.out.println(p1.placeSingleShip(sm1));
+		System.out.println(p1.placeSingleShip(sm2));
+		System.out.println(p1.placeSingleShip(sm3));
+		p1.displayTestGrid();
 		
-		//==================================================
-		xPos = rand.nextInt(10);
-		yPos = rand.nextInt(10);
-		while(map[yPos][xPos] == -1 || map[yPos][xPos] == -2 || map[yPos][xPos] == -3 
-				|| map[yPos][xPos] == -4 || map[yPos][xPos] == -5) { // no duplicated firing
-			xPos = rand.nextInt(10);
-			yPos = rand.nextInt(10);
-		}
-		if(map[yPos][xPos] == 0) { //hits empty space -> 0
-			map[yPos][xPos] = -1;  //change it to missed shot -> -1
-			numOfShots++;
-			return false;
-			
-		}else if(map[yPos][xPos] == 2) { //hits length-2 Ship part -> 2
-			map[yPos][xPos] = -2; //change it to length-2 ship part that's been hit -> -2
-			numOfShots++;
-			numOfHits++;
-			return true;
-			
-		}else if(map[yPos][xPos] == 3) { //hits length-2 Ship part -> 3
-			map[yPos][xPos] = -3; //change it to length-2 ship part that's been hit -> -3
-			numOfShots++;
-			numOfHits++;
-			return true;
-			
-		}else if(map[yPos][xPos] == 4) { //hits length-2 Ship part -> 4
-			map[yPos][xPos] = -4; //change it to length-2 ship part that's been hit -> -4
-			numOfShots++;
-			numOfHits++;
-			return true;
-			
-		}else if(map[yPos][xPos] == 5) { //hits length-2 Ship part -> 5
-			map[yPos][xPos] = -5; //change it to length-2 ship part that's been hit -> -5
-			numOfShots++;
-			numOfHits++;
-			return true;
-			
-		}else { //should never get here
-			return false; 
-		}
-	}
-	
-	/**
-	* Resets player grid and all variables
-	* @param 
-	* @return
-	*/
-	public void reset() {
-		numOfShots = 0;
-		numOfHits = 0;
-		numOfShips = 0;
-		numOfSunk = 0;
-		map = new int [MAP_SIZE][MAP_SIZE];
-		for (int x = 0; x < MAP_SIZE; x++) {
-			for (int y = 0; y < MAP_SIZE; y++) {
-				 map[x][y] = 0;
-				 checkSetShip[x][y] = false;
-				 
-			}
-		}
-	}
-	
-	/**
-	 * Remove one ship from the player grid
-	 * @param x x position of the ship
-	 * @param y y position of the ship 
-	 * @param length length of the ship
-	 * @param vertical ship placement is vertical or horizontal
-	 * @return
-	 */
-	public void removeShip(int x, int y, int length, boolean vertical) {
-		int[] xPos = new int[length];
-		int[] yPos = new int[length];
-		if(map[y][x] == 2) {
-			for(int i = 0; i < length; i++) {
-				xPos[i] = x;
-				yPos[i] = y;
-				map[y][x] = 0;
-				checkSetShip[y][x] = false;
-				if(vertical) {
-					y++;
-				}else {
-					x++;
-				}
-					
-			}
-			numOfShips--;
-		}else if(map[y][x] == 3) { //does not need to call ship.contains?
-			for(int i = 0; i < length; i++) {
-				xPos[i] = x;
-				yPos[i] = y;
-				map[y][x] = 0;
-				checkSetShip[y][x] = false;
-				if(vertical) {
-					y++;
-				}else {
-					x++;
-				}
-					
-			}
-			numOfShips--;
-		}else if(map[y][x] == 4) {
-			for(int i = 0; i < length; i++) {
-				xPos[i] = x;
-				yPos[i] = y;
-				map[y][x] = 0;
-				checkSetShip[y][x] = false;
-				if(vertical) {
-					y++;
-				}else {
-					x++;
-				}
-					
-			}
-			numOfShips--;
-		}else if(map[y][x] == 5) {
-			for(int i = 0; i < length; i++) {
-				xPos[i] = x;
-				yPos[i] = y;
-				map[y][x] = 0;
-				checkSetShip[y][x] = false;
-				if(vertical) {
-					y++;
-				}else {
-					x++;
-				}
-					
-			}
-			numOfShips--;
-		}
-	}
-	/**
-	 * gets the xPos of the player shot position
-	 * @return xPos xPos of the player shot
-	 */
-	public int getXPos() {
-		return xPos;
-	}
-	
-	/**
-	 * gets the yPos of the player shot position
-	 * @return yPos yPos of the player shot
-	 */
-	public int getYPos() {
-		return yPos;
+		int[] firingPos1 = {1,1};
+		p1.registerAIFiringPos(firingPos1);
+		p1.displayTestGrid();
+		
+		int[] firingPos2 = {2,1};
+		p1.registerAIFiringPos(firingPos2);
+		p1.displayTestGrid();
+		
+		int[] firingPos3 = {2,1};
+		System.out.println(p1.registerAIFiringPos(firingPos3));
+		p1.displayTestGrid();
 	}
 }
